@@ -60,7 +60,19 @@ app.use('/api/judge', judgeRoutes);
 
 // Health check route
 app.get('/', (req, res) => {
-  res.json({ message: 'Hackathon Management Platform API' });
+  res.json({ 
+    message: 'Hackathon Management Platform API',
+    status: 'running',
+    endpoints: ['/api/auth', '/api/request', '/api/hackathons', '/api/judge']
+  });
+});
+
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: 'Hackathon Management Platform API',
+    status: 'running',
+    endpoints: ['/api/auth', '/api/request', '/api/hackathons', '/api/judge']
+  });
 });
 
 // Error handling middleware
@@ -70,9 +82,10 @@ app.use((err, req, res, next) => {
 });
 
 // Export for Vercel serverless
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
+module.exports = app;
+
+// Only listen if not in Vercel environment
+if (!process.env.VERCEL && require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
