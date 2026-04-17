@@ -23,9 +23,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL,
   process.env.FRONTEND_URL?.replace(/\/$/, ''), // Remove trailing slash
   'https://hackathon2-frontend-nextjs.vercel.app',
-  'https://hackathon2-frontend-nextjs-git-master-vardhan-gosus-projects.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:3001'
+  'https://hackathon2-frontend-nextjs-git-master-vardhan-gosus-projects.vercel.app'
 ].filter(Boolean);
 
 app.use(cors({
@@ -33,8 +31,8 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Allow all Vercel preview deployments
-    if (origin.includes('vercel.app') || origin.includes('localhost')) {
+    // Allow all Vercel deployments
+    if (origin.includes('vercel.app')) {
       return callback(null, true);
     }
     
@@ -52,30 +50,56 @@ app.use(express.json());
 
 // Connect to MongoDB with caching for serverless
 let cachedConnection = null;
+let isConnecting = false;
 
 const connectDB = async () => {
-  if (cachedConnection) {
+  if (cachedConnection && mongoose.connection.readyState === 1) {
     console.log('Using cached MongoDB connection');
     return cachedConnection;
   }
 
+  // Validate MONGO_URI
+  if (!process.env.MONGO_URI) {
+    console.error('MONGO_URI is not defined in environment variables');
+    throw new Error('MONGO_URI is not defined. Please check your .env file.');
+  }
+
   try {
+    console.log('Connecting to MongoDB...');
     const connection = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      bufferCommands: false, // Disable mongoose buffering
+      maxPoolSize: 10,
     });
-    console.log('MongoDB connected');
+    console.log('MongoDB connected successfully');
     cachedConnection = connection;
     return connection;
   } catch (err) {
-    console.error('MongoDB connection error:', err);
+    console.error('MongoDB connection error:', err.message);
     throw err;
   }
 };
 
-// Initialize connection
-connectDB();
+// Initialize connection with error handling
+connectDB().catch(err => {
+  console.error('Failed to connect to MongoDB:', err);
+  console.error('Please ensure MongoDB is running and MONGO_URI is correctly configured in .env file');
+});
+
+// Handle connection events
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('MongoDB disconnected');
+  cachedConnection = null;
+});
+
+mongoose.connection.on('reconnected', () => {
+  console.log('MongoDB reconnected');
+});
 
 // Routes - with /api prefix
 app.use('/api/auth', authRoutes);
@@ -106,6 +130,27 @@ app.get('/api', (req, res) => {
   });
 });
 
+// MongoDB health check
+app.get('/api/health', async (req, res) => {
+  try {
+    const dbState = mongoose.connection.readyState;
+    const dbStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'][dbState];
+    
+    res.json({
+      status: 'ok',
+      database: dbStatus,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      database: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -114,10 +159,3 @@ app.use((err, req, res, next) => {
 
 // Export for Vercel serverless
 module.exports = app;
-
-// Only listen if not in Vercel environment
-if (!process.env.VERCEL && require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-}

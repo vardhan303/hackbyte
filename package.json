@@ -11,8 +11,6 @@
     "install:backend": "cd backend && npm install",
     "install:frontend": "cd frontend-nextjs && npm install",
     "install:all": "npm run install:backend && npm run install:frontend",
-    "dev:backend": "cd backend && npm run dev",
-    "dev:frontend": "cd frontend-nextjs && npm run dev",
     "build:backend": "cd backend && npm install",
     "build:frontend": "cd frontend-nextjs && npm run build",
     "start:backend": "cd backend && npm start",
