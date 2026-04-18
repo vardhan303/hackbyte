@@ -143,7 +143,7 @@
                 type="text" 
                 id="apiUrl" 
                 placeholder="https://your-backend.vercel.app"
-                value=""
+                value="https://hackathon2-backend-sage.vercel.app"
             >
         </div>
 
@@ -175,8 +175,12 @@
 
             seedBtn.disabled = true;
             seedBtn.textContent = 'Creating Admin...';
+            messageDiv.style.display = 'none';
+            credentialsDiv.classList.remove('show');
 
             try {
+                console.log('Sending request to:', `${apiUrl}/auth/seed-admin`);
+                
                 const response = await fetch(`${apiUrl}/auth/seed-admin`, {
                     method: 'POST',
                     headers: {
@@ -184,16 +188,19 @@
                     }
                 });
 
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
 
                 if (response.ok) {
                     showMessage('✅ ' + data.message, 'success');
                     credentialsDiv.classList.add('show');
                 } else {
-                    showMessage('❌ ' + data.message, 'error');
+                    showMessage('❌ ' + (data.message || 'Unknown error'), 'error');
                 }
             } catch (error) {
-                showMessage('❌ Failed to connect to backend. Check your API URL.', 'error');
+                console.error('Fetch error:', error);
+                showMessage('❌ Failed to connect to backend. Error: ' + error.message + '. Check console for details.', 'error');
             } finally {
                 seedBtn.disabled = false;
                 seedBtn.textContent = 'Create Admin User';
@@ -204,6 +211,7 @@
             const messageDiv = document.getElementById('message');
             messageDiv.textContent = text;
             messageDiv.className = 'message ' + type;
+            messageDiv.style.display = 'block';
         }
     </script>
 </body>

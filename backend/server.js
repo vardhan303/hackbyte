@@ -36,6 +36,11 @@ app.use(cors({
       return callback(null, true);
     }
     
+    // Allow local file requests (for seed-admin.html)
+    if (origin === 'null' || origin === 'file://') {
+      return callback(null, true);
+    }
+    
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.FRONTEND_URL === '*') {
       callback(null, true);
     } else {
