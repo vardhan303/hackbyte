@@ -379,4 +379,4 @@ const fixRegistrationIndexes = async (req, res) => {
   }
 };
 
-module.exports = { register, login, getMe, getAllUsers, getUserById, updateUserStatus, changePassword, seedAdmin, fixRegistrationNumbers, fixRegistrationIndexes };
+module.exports = { register, login, getMe, getAllUsers, getUserById, updateUserStatus, changePassword, seedAdmin, fixRegistrationNumbers, fixRegistrationIndexes, diagnoseAdmin };
