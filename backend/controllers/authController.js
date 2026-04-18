@@ -218,7 +218,28 @@ const seedAdmin = async (req, res) => {
     const existingAdmin = await User.findOne({ email: 'admin@hackathon.com' });
     
     if (existingAdmin) {
-      return res.status(400).json({ message: 'Admin user already exists' });
+      // Update the existing admin with proper hashed password
+      console.log('Admin exists, updating password...');
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+      
+      existingAdmin.password = hashedPassword;
+      existingAdmin.role = 'admin';
+      existingAdmin.approved = true;
+      await existingAdmin.save();
+      
+      console.log('✅ Admin user updated successfully!');
+      console.log('Email: admin@hackathon.com');
+      console.log('Password: admin123');
+      
+      return res.status(200).json({ 
+        message: 'Admin user updated successfully!',
+        credentials: {
+          email: 'admin@hackathon.com',
+          password: 'admin123',
+          note: 'Please change password after first login'
+        }
+      });
     }
 
     // Create admin user

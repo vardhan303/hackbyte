@@ -117,11 +117,11 @@ app.use('/judge', judgeRoutes);
 const autoSeedAdmin = async () => {
   try {
     const User = require('./models/User');
+    const bcrypt = require('bcryptjs');
     const existingAdmin = await User.findOne({ email: 'admin@hackathon.com' });
     
     if (!existingAdmin) {
       console.log('No admin user found. Creating default admin...');
-      const bcrypt = require('bcryptjs');
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('admin123', salt);
 
@@ -139,7 +139,25 @@ const autoSeedAdmin = async () => {
       console.log('🔑 Password: admin123');
       console.log('⚠️  Please change the password after first login!');
     } else {
-      console.log('✅ Admin user already exists');
+      // Check if password needs to be re-hashed
+      const isPasswordHashed = existingAdmin.password.startsWith('$2');
+      
+      if (!isPasswordHashed) {
+        console.log('Admin exists with unhashed password. Fixing...');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('admin123', salt);
+        
+        existingAdmin.password = hashedPassword;
+        existingAdmin.role = 'admin';
+        existingAdmin.approved = true;
+        await existingAdmin.save();
+        
+        console.log('✅ Admin password fixed successfully!');
+        console.log('📧 Email: admin@hackathon.com');
+        console.log('🔑 Password: admin123');
+      } else {
+        console.log('✅ Admin user already exists with proper password');
+      }
     }
   } catch (error) {
     console.error('❌ Error auto-seeding admin:', error.message);
