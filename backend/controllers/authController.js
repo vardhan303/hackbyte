@@ -235,6 +235,10 @@ const seedAdmin = async (req, res) => {
 
     await admin.save();
     
+    console.log('✅ Admin user created successfully!');
+    console.log('Email: admin@hackathon.com');
+    console.log('Password: admin123');
+    
     res.status(201).json({ 
       message: 'Admin user created successfully!',
       credentials: {

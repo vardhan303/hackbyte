@@ -113,6 +113,45 @@ app.use('/request', requestRoutes);
 app.use('/hackathons', hackathonRoutes);
 app.use('/judge', judgeRoutes);
 
+// Auto-seed admin on first deployment
+const autoSeedAdmin = async () => {
+  try {
+    const User = require('./models/User');
+    const existingAdmin = await User.findOne({ email: 'admin@hackathon.com' });
+    
+    if (!existingAdmin) {
+      console.log('No admin user found. Creating default admin...');
+      const bcrypt = require('bcryptjs');
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+
+      const admin = new User({
+        name: 'System Admin',
+        email: 'admin@hackathon.com',
+        password: hashedPassword,
+        role: 'admin',
+        approved: true
+      });
+
+      await admin.save();
+      console.log('✅ Default admin created successfully!');
+      console.log('📧 Email: admin@hackathon.com');
+      console.log('🔑 Password: admin123');
+      console.log('⚠️  Please change the password after first login!');
+    } else {
+      console.log('✅ Admin user already exists');
+    }
+  } catch (error) {
+    console.error('❌ Error auto-seeding admin:', error.message);
+  }
+};
+
+// Run auto-seed after MongoDB connection is established
+mongoose.connection.once('open', () => {
+  console.log('MongoDB connection established');
+  autoSeedAdmin();
+});
+
 // Health check route
 app.get('/', (req, res) => {
   res.json({ 
